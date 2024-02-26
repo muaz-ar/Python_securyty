@@ -8,8 +8,8 @@
     keyname: psp_ansible_key
     instance_type: t2.micro
     security_group: launch-wizard-1
-    image: ami-0be057a22c63962cb
-    region: eu-west-2
+    image: ami-0d118c6e63bcb554e
+    region: eu-central-1
     tagname: Name=TestServer
 
   tasks:
@@ -27,7 +27,7 @@
          image: "{{ image }}"
          wait: true
          region: "{{ region }}"
-         vpc_subnet_id: subnet-02a17e56e6827124a
+         vpc_subnet_id: subnet-0a797027072d5dd03
          assign_public_ip: yes
          instance_tags: "{{tagname}}"
       register: ec2

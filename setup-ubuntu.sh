@@ -13,14 +13,14 @@ usermod -aG docker ubuntu
 
 #let docker run when server is restarted
 systemctl enable docker
-
+sudo systemctl start docker
 #create random password for jenkins user which will be created automatically
 export Jenkins_PW=$(openssl rand -base64 16)
 export JAVA_OPTS="-Djenkins.install.runSetupWizard=false"
 
 #we're providing the server its public hostname for its relative links
-export JenkinsPublicHostname=$(curl -s http://169.254.169.254/latest/meta-data/public-hostname)
-export SeleniumPrivateIp=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
+export JenkinsPublicHostname=$(curl -s http://54.93.196.230/latest/meta-data/public-hostname)
+export SeleniumPrivateIp=$(curl -s http://54.93.196.230/latest/meta-data/local-ipv4)
 #build the jenkins container
 docker-compose up -d --build
 

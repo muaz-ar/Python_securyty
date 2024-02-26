@@ -1,56 +1,47 @@
+# Verwenden des Jenkins LTS Docker Images als Basis
 FROM jenkins/jenkins:lts
-MAINTAINER pawan uppadey <pawan.uppadey@gmail.com>
 
-#Install Jenkins plugin to make this pipeline work
-COPY plugins.txt /usr/share/jenkins/ref/plugins.txt
-RUN /usr/local/bin/install-plugins.sh < /usr/share/jenkins/ref/plugins.txt
-
-#Copy script to auto create user to jenkins init folder
-COPY setupJenkins.groovy /usr/share/jenkins/ref/init.groovy.d/
-
-#setup the docker container for scanners
+# Wechseln zum Root-Benutzer für die Installation
 USER root
+
+# Aktualisieren der Paketlisten und Installieren von Abhängigkeiten
 RUN apt-get update && apt-get install -y \
-	python-pip \
-	curl \
-	maven \
-	git \
-	perl \
-	wget \
-	kbtin \
-	libnet-ssleay-perl \
-	software-properties-common
+    python3-pip \
+    python3-venv \
+    curl \
+    maven \
+    git \
+    perl \
+    wget \
+    kbtin \
+    libnet-ssleay-perl \
+    software-properties-common
 
-#add public key for the multiverse repo which has nikto
-RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3B4FE6ACC0B21F32
-RUN add-apt-repository 'deb http://archive.ubuntu.com/ubuntu bionic multiverse'
-RUN add-apt-repository 'deb http://archive.ubuntu.com/ubuntu bionic-security multiverse'
-RUN add-apt-repository 'deb http://archive.ubuntu.com/ubuntu bionic-updates multiverse'
+# Hinzufügen des öffentlichen Schlüssels für das Multiverse-Repository, das Nikto enthält
+RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 3B4FE6ACC0B21F32 && \
+    add-apt-repository 'deb http://archive.ubuntu.com/ubuntu bionic multiverse' && \
+    add-apt-repository 'deb http://archive.ubuntu.com/ubuntu bionic-security multiverse' && \
+    add-apt-repository 'deb http://archive.ubuntu.com/ubuntu bionic-updates multiverse'
 
-RUN apt-get update -y
-RUN apt-get install -y nikto	
-	
-#Install virtualenv to isolate each project dependencies
-RUN pip install virtualenv
-#Install python SCA tool/dependency checker, license check
-RUN pip install safety
-RUN pip install liccheck
-#Install the git history checker for secrets
-RUN pip install trufflehog
-#Install python SAST tool
-RUN pip install bandit
+# Erneutes Aktualisieren der Paketlisten nach dem Hinzufügen der Repositories und Installieren von Nikto
+RUN apt-get update -y && \
+    apt-get install -y nikto
 
-# Used for authenticated DAST scan
-RUN pip install selenium
+# Erstellen einer virtuellen Umgebung für Python-Tools
+RUN python3 -m venv /opt/venv
 
-#install the orchestration tool, boto for ec2 module, some lib upgrade under requests
-RUN pip install ansible
-RUN pip install boto 
-RUN pip install boto3
+# Aktivieren der virtuellen Umgebung und Installieren von Python-Paketen
+RUN /bin/bash -c "source /opt/venv/bin/activate && \
+    pip install --upgrade pip && \
+    pip install virtualenv safety liccheck trufflehog bandit selenium ansible boto boto3"
 
-# configure ansible to use right keys and not check host auth for this ephemeral/temp aws host
-# Not authenticating existing/long-term hosts requiring relogins may lead to mitm.. be careful
+# Kopieren der Ansible-Konfigurationsdatei in den Container
 COPY ansible.cfg /etc/ansible/ansible.cfg
 
-# drop back to the regular jenkins user - good practice
+# Installieren der Jenkins-Plugins mit dem jenkins-plugin-cli Tool
+COPY plugins.txt /usr/share/jenkins/ref/plugins.txt
+RUN jenkins-plugin-cli --plugin-file /usr/share/jenkins/ref/plugins.txt
+
+# Zurückwechseln zum Jenkins-Benutzer
 USER jenkins
+
