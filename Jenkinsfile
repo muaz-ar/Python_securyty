@@ -115,4 +115,8 @@ pipeline {
                     sh 'bash -c "source /opt/venv/bin/activate && ansible-playbook -i ~/ansible_hosts ~/killec2.yml"'
                 } 
             }
+	    }
+     }
+}
+     
             */
